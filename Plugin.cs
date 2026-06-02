@@ -93,10 +93,14 @@ public class Plugin : BaseSettingsPlugin<Settings> {
     private BowsAncientsRotation _bowsAncientsRotation;
     private BowsAncientsRotation BowsAncientsRotation => _bowsAncientsRotation ??= new(this.Settings);
 
+    private TwisterRotation _twisterRotation;
+    private TwisterRotation TwisterRotation => _twisterRotation ??= new(this.Settings);
+
     private Dictionary<string, IRotation> _rotationMenu;
     public Dictionary<string, IRotation> RotationMenu => _rotationMenu ??= new() {
         { "Bows: Ancients", BowsAncientsRotation },
         //{ "Volcanic Fissure", VolcanicRotation }
+        { "Twister", TwisterRotation },
     };
 
     public IRotation ActiveRotation;

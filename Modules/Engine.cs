@@ -23,6 +23,15 @@ public class RotationAction {
     public int LockoutDuration { get; set; } = 0;
 
     /// <summary>
+    /// Optional screen position to aim the cursor at before firing, restored afterward. Null = no aim.
+    /// </summary>
+    public SVector2? AimScreenPos { get; set; } = null;
+    /// <summary>
+    /// Milliseconds to wait after moving the cursor before the keypress.
+    /// </summary>
+    public int AimSettleMs { get; set; } = 0;
+
+    /// <summary>
     /// Triggers a quick key press and release event (for instant cast skills).
     /// </summary>
     /// <param name="name">The name of the action.</param>
@@ -105,7 +114,21 @@ public sealed class Engine : PluginModule {
         }
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct POINT { public int X; public int Y; }
+
     private void ExecuteInputBehavior(RotationAction action) {
+        // move the cursor to the aim point for this cast, then restore it
+        bool restoreAim = false;
+        POINT savedCursor = default;
+        if (action.AimScreenPos.HasValue && GetCursorPos(out savedCursor)) {
+            Input.SetCursorPos(action.AimScreenPos.Value);
+            if (action.AimSettleMs > 0) System.Threading.Thread.Sleep(action.AimSettleMs);
+            restoreAim = true;
+        }
+
         switch (action.Behavior) {
             case ActionBehavior.KeyPress:
                 Log($"[{action.Name}]: {action.Reason}");
@@ -131,6 +154,8 @@ public sealed class Engine : PluginModule {
                 }
                 break;
         }
+
+        if (restoreAim) Input.SetCursorPos(new SVector2(savedCursor.X, savedCursor.Y));
     }
     private void SafeReleaseCurrentKey() {
         //Log($"Releasing current key: {_currentlyHeldKey}");

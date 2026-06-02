@@ -23,6 +23,7 @@ public sealed class Settings : ISettings {
     public string SelectedRotation { get; set; } = "Bows: Ancients";
 
     public BowsAncientsSettings Rotation_BowsAncients { get; set; } = new();
+    public TwisterSettings Rotation_Twister { get; set; } = new();
 
 
 
