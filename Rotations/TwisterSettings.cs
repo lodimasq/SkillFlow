@@ -30,6 +30,8 @@ public class TwisterSettings {
     public int FreezingMark_Range = 60;
     public int FreezingMark_MaxBackoffMs = 4000;
     public int Barrage_MinRares = 1;
+    public bool BarragePreserveRoll = false;
+    public int PreserveRollDelayMs = 100;
     public int WarBanner_RecastDelayMs = 4000;
     public bool WarBanner_IncludeRares = false;
     public int Twister_StackThreshold = 3;

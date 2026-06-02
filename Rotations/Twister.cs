@@ -230,6 +230,7 @@ public class TwisterRotation : IRotation {
     private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
     private readonly Dictionary<string, long> _lastFired = new();
     private bool _wsHeld = false;
+    private bool _preserveArmed = false;
     private long _lastCastMs = -100000;
     private const int BuffSuppressionMs = 500;      // anti-double-cast + FM backoff base
     private const int WhirlingSlashHoldMs = 30;
@@ -314,7 +315,9 @@ public class TwisterRotation : IRotation {
         if (!Settings.UseBarrage) return null;
         if (Settings.UseIceTipArrow && !SS.Buff_IceTip.IsActive) return null; // don't empower while ITA down
         if (SS.Buff_Barrage.IsActive) return null;
-        bool condition = burst || SS.UniquePresent || SS.RareCount >= Settings.Barrage_MinRares;
+        bool condition = burst
+            || (Settings.BarragePreserveRoll && SS.TwisterAimTarget != null) // preserve chain: empower any pack we'll Twister
+            || SS.UniquePresent || SS.RareCount >= Settings.Barrage_MinRares;
         if (!condition) return null;
         if (!SS.Skill_Barrage.CanBeUsed) return null;
         if (RecentlyFired(SS.Skill_Barrage.Id, BuffSuppressionMs)) return null;
@@ -334,6 +337,12 @@ public class TwisterRotation : IRotation {
         if (!SS.Skill_Twister.CanBeUsed) return null;
         var action = Tap(SS.Skill_Twister, Settings.TwisterKey, $"twister ({stacks}/{Settings.Twister_StackThreshold})");
         if (Settings.AutoAim) { action.AimScreenPos = aim; action.AimSettleMs = Settings.AimSettleMs; }
+
+        // roll-cancel after Twister to keep the empower buff; shorten the lockout to the cancel window
+        if (Settings.BarragePreserveRoll && SS.Buff_Barrage.IsActive) {
+            action.LockoutDuration = Settings.PreserveRollDelayMs;
+            _preserveArmed = true;
+        }
         return action;
     }
 
@@ -359,10 +368,10 @@ public class TwisterRotation : IRotation {
         var player = gameController.Player;
         if (player == null || !player.TryGetComponent<Actor>(out var actor)) return null;
 
-        if (actor.Animation == AnimationE.DodgeRoll || actor.Animation == AnimationE.DodgeRollBack) return ReleaseIfHeld();
+        if (actor.Animation == AnimationE.DodgeRoll || actor.Animation == AnimationE.DodgeRollBack) { _preserveArmed = false; return ReleaseIfHeld(); }
 
         bool burst = Input.IsKeyDown(Settings.BurstKey);
-        if (!Input.IsKeyDown(Settings.HoldKey) && !burst) return ReleaseIfHeld();
+        if (!Input.IsKeyDown(Settings.HoldKey) && !burst) { _preserveArmed = false; return ReleaseIfHeld(); }
 
         SS.Reset();
         SS.SnapshotSkills(actor);
@@ -373,6 +382,13 @@ public class TwisterRotation : IRotation {
         if (PluginSettings.DXT.DBug.ShowMonitor) {
             SS.Monitor();
             SS.MonitorRaw(actor, player);
+        }
+
+        // roll-cancel the just-fired Twister to keep empower (does not reset the throttle)
+        if (_preserveArmed) {
+            _preserveArmed = false;
+            _wsHeld = false;
+            return new RotationAction("Dodge", "preserve empower", Settings.DodgeRollKey, RollLockoutMs);
         }
 
         // global throttle (burst ignores it)
@@ -470,6 +486,9 @@ public class TwisterRotation : IRotation {
         ImGui.SliderInt("Mark max backoff (ms)", ref Settings.FreezingMark_MaxBackoffMs, 500, 10000);
         ImGui.Checkbox("Barrage", ref Settings.UseBarrage);
         ImGui.SliderInt("Barrage min rares", ref Settings.Barrage_MinRares, 1, 10);
+        ImGui.Checkbox("Preserve empower (roll-cancel)", ref Settings.BarragePreserveRoll);
+        if (Settings.BarragePreserveRoll)
+            ImGui.SliderInt("Preserve roll delay (ms)", ref Settings.PreserveRollDelayMs, 50, 400);
 
         ImGui.PopItemWidth();
     }
