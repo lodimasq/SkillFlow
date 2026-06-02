@@ -20,6 +20,7 @@ public sealed class Settings : ISettings {
     public bool WeaponTooltip = true;
     public bool WeaponTooltipDebug = false;
 
+    public string SelectedRotation { get; set; } = "Bows: Ancients";
 
     public BowsAncientsSettings Rotation_BowsAncients { get; set; } = new();
 

@@ -94,7 +94,7 @@ public class Plugin : BaseSettingsPlugin<Settings> {
     private BowsAncientsRotation BowsAncientsRotation => _bowsAncientsRotation ??= new(this.Settings);
 
     private Dictionary<string, IRotation> _rotationMenu;
-    private Dictionary<string, IRotation> RotationMenu => _rotationMenu ??= new() {
+    public Dictionary<string, IRotation> RotationMenu => _rotationMenu ??= new() {
         { "Bows: Ancients", BowsAncientsRotation },
         //{ "Volcanic Fissure", VolcanicRotation }
     };
@@ -102,7 +102,7 @@ public class Plugin : BaseSettingsPlugin<Settings> {
     public IRotation ActiveRotation;
 
     public void LoadRotation() {
-        ActiveRotation = BowsAncientsRotation;
+        ActiveRotation = RotationMenu.GetValueOrDefault(Settings.SelectedRotation) ?? RotationMenu.Values.First();
     }
 
 
