@@ -5,8 +5,8 @@ namespace SkillFlow;
 public class TwisterSettings {
 
     // activation
-    public Keys HoldKey = Keys.RButton;
-    public Keys BurstKey = Keys.XButton1;
+    public Keys HoldKey = Keys.XButton1;
+    public Keys BurstKey = Keys.XButton2;
 
     // skill keys
     public Keys WhirlingSlashKey = Keys.MButton;
